@@ -4,9 +4,10 @@
 import sys
 from typing import Any
 import httpx
+#from anthropic import anthropic
 from mcp.server.fastmcp import FastMCP
-from anthropic import anthropic
 import pandas as pd
+
 
 # Initialize FastMCP server
 mcp = FastMCP("luna", description="Luna PE API Tool using FastMCP", version="1.0.0")

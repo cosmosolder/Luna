@@ -4,7 +4,7 @@
 import sys
 from typing import Any
 import httpx
-from anthropic import anthropic
+from anthropic import Anthropic
 from mcp.server.fastmcp import FastMCP
 import pandas as pd
 

@@ -5,7 +5,7 @@ import sys
 from typing import Any
 import httpx
 from mcp.server.fastmcp import FastMCP
-from anthropic import Anthropic
+from anthropic import anthropic
 import pandas as pd
 
 # Initialize FastMCP server

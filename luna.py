@@ -5,14 +5,22 @@ import sys
 from typing import Any
 import httpx
 from mcp.server.fastmcp import FastMCP
+from anthropic import Anthropic
+import pandas as pd
 
 # Initialize FastMCP server
-mcp = FastMCP("weather", description="Weather API Tool using FastMCP", version="1.0.0")
+mcp = FastMCP("luna", description="Luna PE API Tool using FastMCP", version="1.0.0")
+#mcp = FastMCP("weather", description="Weather API Tool using FastMCP", version="1.0.0")
 
 
 # Constants
+XLSX_FILE = "/Users/johnsolder/Library/CloudStorage/OneDrive-Coherent/Excel Examples/Mortgage Model/MTG_AMORT_CALC/mortgage-amort-calculator.xlsx"
 NWS_API_BASE = "https://api.weather.gov"
 USER_AGENT = "weather-app/1.0"
+
+print(XLSX_FILE,'IN LUNA.PY +++++++++++++++++++++++', file=sys.stderr)
+
+
 async def make_nws_request(url: str) -> dict[str, Any] | None:
     """Make a request to the NWS API with proper error handling."""
     headers = {

@@ -19,8 +19,26 @@ XLSX_FILE = "/Users/johnsolder/Library/CloudStorage/OneDrive-Coherent/Excel Exam
 NWS_API_BASE = "https://api.weather.gov"
 USER_AGENT = "weather-app/1.0"
 
-print(XLSX_FILE,'IN LUNA.PY +++++++++++++++++++++++', file=sys.stderr)
+def convert_xls_to_df(xlsx_file: str) -> pd.DataFrame:
+    """Convert an XLSX file to a Pandas DataFrame."""
+    try:
+        #df = pd.read_excel(xlsx_file, engine='openpyxl')
+        dfs = pd.read_excel(xlsx_file, sheet_name=None,engine='openpyxl')
+        combined_df = pd.concat(dfs.values(), ignore_index=True)
+        return dfs
+    except Exception as e:
+        print(f"Error reading XLSX file: {e}", file=sys.stderr)
+        return pd.DataFrame()  # Return empty DataFrame on error        
 
+ def convert_df_to_md_table(df: pd.DataFrame) -> str:
+    """Convert a Pandas DataFrame to a Markdown table."""
+    if df.empty:
+        return "No data available."
+
+    md_table = df.to_markdown(index=False)
+    print(markdown_table)
+
+    return md_table   
 
 async def make_nws_request(url: str) -> dict[str, Any] | None:
     """Make a request to the NWS API with proper error handling."""
@@ -100,8 +118,11 @@ Forecast: {period['detailedForecast']}
         forecasts.append(forecast)
 
     return "\n---\n".join(forecasts)
+
 if __name__ == "__main__":
-    #print('IN WEATHER.PY +++++++++++++++++++++++', file=sys.stderr)
     # Initialize and run the server
-    mcp.run(transport='stdio')
-    
+    #mcp.run(transport='stdio')
+    print('IN LUNA.PY +++++++++++++++++++++++', file=sys.stderr)
+    print('Sheet',XLSX_FILE, file=sys.stderr)
+    #convert_xls_to_df(XLSX_FILE)
+    new_md_table = convert_df_to_md_table(convert_xls_to_df(XLSX_FILE))

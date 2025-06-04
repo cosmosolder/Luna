@@ -11,13 +11,10 @@ import pandas as pd
 
 # Initialize FastMCP server
 mcp = FastMCP("luna", description="Luna PE API Tool using FastMCP", version="1.0.0")
-#mcp = FastMCP("weather", description="Weather API Tool using FastMCP", version="1.0.0")
-
 
 # Constants
 XLSX_FILE = "/Users/johnsolder/Library/CloudStorage/OneDrive-Coherent/Excel Examples/Mortgage Model/MTG_AMORT_CALC/mortgage-amort-calculator.xlsx"
-NWS_API_BASE = "https://api.weather.gov"
-USER_AGENT = "weather-app/1.0"
+
 
 def convert_xls_to_df(xlsx_file: str) -> pd.DataFrame:
     """Convert an XLSX file to a Pandas DataFrame."""
@@ -25,104 +22,76 @@ def convert_xls_to_df(xlsx_file: str) -> pd.DataFrame:
         #df = pd.read_excel(xlsx_file, engine='openpyxl')
         dfs = pd.read_excel(xlsx_file, sheet_name=None,engine='openpyxl')
         combined_df = pd.concat(dfs.values(), ignore_index=True)
-        return dfs
+        return combined_df
     except Exception as e:
         print(f"Error reading XLSX file: {e}", file=sys.stderr)
-        return pd.DataFrame()  # Return empty DataFrame on error        
+        return pd.DataFrame()  # Return empty DataFrame on error  
 
- def convert_df_to_md_table(df: pd.DataFrame) -> str:
+def convert_df_to_md_table(df: pd.DataFrame) -> str:
     """Convert a Pandas DataFrame to a Markdown table."""
     if df.empty:
         return "No data available."
 
+    # Replace newlines with <br> for HTML-like line breaks within Markdown
+    df = df.apply(lambda x: x.str.replace('\n', '<br>') if x.dtype == 'object' else x)
+
     md_table = df.to_markdown(index=False)
-    print(markdown_table)
+
+    #print(md_table)
 
     return md_table   
 
-async def make_nws_request(url: str) -> dict[str, Any] | None:
-    """Make a request to the NWS API with proper error handling."""
-    headers = {
-        "User-Agent": USER_AGENT,
-        "Accept": "application/geo+json"
-    }
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(url, headers=headers, timeout=30.0)
-            response.raise_for_status()
-            return response.json()
-        except Exception:
-            return None
+def build_mcp_input(markdown_table: str) -> str:
+    #Construct Your "Model Context Protocol" Input:
+    #This is where you combine the Markdown table with any other elements required by your "MCP" (e.g., specific instructions, preamble text, custom tags).
 
-def format_alert(feature: dict) -> str:
-    """Format an alert feature into a readable string."""
-    props = feature["properties"]
-    return f"""
-Event: {props.get('event', 'Unknown')}
-Area: {props.get('areaDesc', 'Unknown')}
-Severity: {props.get('severity', 'Unknown')}
-Description: {props.get('description', 'No description available')}
-Instructions: {props.get('instruction', 'No specific instructions provided')}
-"""
-@mcp.tool()
-async def get_alerts(state: str) -> str:
-    """Get weather alerts for a US state.
+    LoanAmt = 500000.00
+    IntRate = 7.0
+    LoanTerm = 30
 
-    Args:
-        state: Two-letter US state code (e.g. CA, NY)
+    mcp_input = f"""
+    Loan Amount: {LoanAmt}
+    Interest Rate: {IntRate}
+    Loan Term: {LoanTerm} years
+
+    Please analyze the following financial summary data for the specified period.
+    Identify key trends, growth rates, and any significant changes.
+
+    {markdown_table}
+
+    Provide a concise executive summary of the financial performance.
     """
-    url = f"{NWS_API_BASE}/alerts/active/area/{state}"
-    data = await make_nws_request(url)
+    print(mcp_input)
+    return ""
 
-    if not data or "features" not in data:
-        return "Unable to fetch alerts or no alerts found."
-
-    if not data["features"]:
-        return "No active alerts for this state."
-
-    alerts = [format_alert(feature) for feature in data["features"]]
-    return "\n---\n".join(alerts)
 
 @mcp.tool()
-async def get_forecast(latitude: float, longitude: float) -> str:
-    """Get weather forecast for a location.
+async def get_workbook(workbook: str) -> str:
+    """Get the contents of a workbook.
 
     Args:
-        latitude: Latitude of the location
-        longitude: Longitude of the location
+        workbook: Name of the workbook to retrieve
     """
-    # First get the forecast grid endpoint
-    points_url = f"{NWS_API_BASE}/points/{latitude},{longitude}"
-    points_data = await make_nws_request(points_url)
+    #if workbook != XLSX_FILE:
+    #    return f"Workbook '{workbook}' not found."
 
-    if not points_data:
-        return "Unable to fetch forecast data for this location."
+    print('In get_workbook',workbook)
 
-    # Get the forecast URL from the points response
-    forecast_url = points_data["properties"]["forecast"]
-    forecast_data = await make_nws_request(forecast_url)
+    df = convert_xls_to_df(workbook)
+    if df.empty:
+        return "No data available in the workbook."
 
-    if not forecast_data:
-        return "Unable to fetch detailed forecast."
+    markdown_table = convert_df_to_md_table(df)
+    build_mcp_input(markdown_table)
+    return markdown_table   
 
-    # Format the periods into a readable forecast
-    periods = forecast_data["properties"]["periods"]
-    forecasts = []
-    for period in periods[:5]:  # Only show next 5 periods
-        forecast = f"""
-{period['name']}:
-Temperature: {period['temperature']}°{period['temperatureUnit']}
-Wind: {period['windSpeed']} {period['windDirection']}
-Forecast: {period['detailedForecast']}
-"""
-        forecasts.append(forecast)
+    #print('IN LUNA.PY +++++++++++++++++++++++', file=sys.stderr)
+    #print('Sheet',XLSX_FILE, file=sys.stderr)
+    #convert_xls_to_df(XLSX_FILE)
+    #new_md_table = convert_df_to_md_table(convert_xls_to_df(workbook))
 
-    return "\n---\n".join(forecasts)
+
 
 if __name__ == "__main__":
     # Initialize and run the server
-    #mcp.run(transport='stdio')
-    print('IN LUNA.PY +++++++++++++++++++++++', file=sys.stderr)
-    print('Sheet',XLSX_FILE, file=sys.stderr)
-    #convert_xls_to_df(XLSX_FILE)
-    new_md_table = convert_df_to_md_table(convert_xls_to_df(XLSX_FILE))
+    mcp.run(transport='stdio')
